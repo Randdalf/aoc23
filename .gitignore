@@ -1,0 +1,6 @@
+.ninja_log
+build.ninja
+d*.txt
+*.o
+*.o.d
+*.exe
