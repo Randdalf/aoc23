@@ -1,5 +1,6 @@
 #include "aoc.h"
 
+#include <float.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,10 +16,11 @@ static void PrintUsage(const char* Prog)
     printf("usage: %s [<options>]\n\n", Prog);
     printf("    -1  run part 1 only\n");
     printf("    -2  run part 2 only\n");
-    printf("    -h  print this help\n");
+    printf("    -h  print this help, then exit\n");
     printf("    -i  read input from stdin\n");
     printf("    -q  quiet mode\n");
     printf("    -e  echo puzzle input to stdout, then exit\n");
+    printf("    -b  benchmark mode, reports best time from many runs\n");
 }
 
 static char* ReadStandardInput(void)
@@ -84,16 +86,23 @@ static double Clock(void)
     return (double)Counter.QuadPart / Frequency;
 }
 
-static void RunSolver(aoc_solver* Solver, const char* Input, bool Quiet)
+static void RunSolver(aoc_solver* Solver, const char* Input, bool Quiet, bool Benchmark)
 {
-    double Start = Clock();
-    int64_t Result = Solver(Input);
-    double End = Clock();
+    int64_t Result;
+    double BestTime = DBL_MAX;
+    int NumTrials = Benchmark ? 10000 : 1;
+    for(int Trial = 0; Trial < NumTrials; Trial++)
+    {
+        double Start = Clock();
+        Result = Solver(Input);
+        double Time = Clock() - Start;
+        if(Time < BestTime) BestTime = Time;
+    }
     if(Result == -1) return;
     printf("%-30lld", Result);
     if(!Quiet)
     {
-        printf(" %.4fms", 1000 * (End - Start));
+        printf(" %.4fms", 1000 * BestTime);
     }
     printf("\n");
 }
@@ -105,6 +114,7 @@ int main(int ArgCount, const char** Args)
     bool EchoInput = false;
     bool UseStandardInput = false;
     bool Quiet = false;
+    bool Benchmark = false;
     for(int ArgIndex = 1; ArgIndex < ArgCount; ArgIndex++)
     {
         const char* Arg = Args[ArgIndex];
@@ -120,6 +130,7 @@ int main(int ArgCount, const char** Args)
             {
             case '1': ExclusiveSolver = 1; break;
             case '2': ExclusiveSolver = 2; break;
+            case 'b': Benchmark = true; break;
             case 'e': EchoInput = true; break;
             case 'i': UseStandardInput = true; break;
             case 'h':
@@ -159,13 +170,13 @@ int main(int ArgCount, const char** Args)
     // Run part 1.
     if(ExclusiveSolver < 0 || ExclusiveSolver == 1)
     {
-        RunSolver(Part1, Input, Quiet);
+        RunSolver(Part1, Input, Quiet, Benchmark);
     }
 
     // Run part 2.
     if(ExclusiveSolver < 0 || ExclusiveSolver == 2)
     {
-        RunSolver(Part2, Input, Quiet);
+        RunSolver(Part2, Input, Quiet, Benchmark);
     }
 
     // Tidy up and return.
