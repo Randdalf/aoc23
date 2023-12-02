@@ -14,10 +14,10 @@ enum
     TOKEN_EOL = '\n',
     TOKEN_EOF = '\0',
     TOKEN_NUMBER = 256,
-    TOKEN_BLUE,
     TOKEN_RED,
-    TOKEN_GAME,
     TOKEN_GREEN,
+    TOKEN_BLUE,
+    TOKEN_GAME,
 };
 
 typedef struct
@@ -150,21 +150,8 @@ AOC_SOLVER(Part1)
                     {
                         int Cubes = Number(&Scanner);
                         Advance(&Scanner);
-                        switch(Scanner.PrevToken.Type)
-                        {
-                        case TOKEN_RED:
-                            Possible &= Cubes <= 12;
-                            break;
-                        case TOKEN_GREEN:
-                            Possible &= Cubes <= 13;
-                            break;
-                        case TOKEN_BLUE:
-                            Possible &= Cubes <= 14;
-                            break;
-                        default:
-                            fprintf(stderr, "Unexpected color.");
-                            exit(EXIT_FAILURE);
-                        }
+                        int Color = Scanner.PrevToken.Type - TOKEN_RED;
+                        Possible &= Cubes <= 12 + Color;
                     } while(Accept(&Scanner, TOKEN_COMMA));
                 } while(Accept(&Scanner, TOKEN_SEMICOLON));
             }
@@ -179,5 +166,32 @@ AOC_SOLVER(Part1)
 
 AOC_SOLVER(Part2)
 {
-    return -1;
+    int64_t Sum = 0;
+    scanner Scanner = { .At = Input };
+    Advance(&Scanner);
+    if(Check(&Scanner, TOKEN_GAME))
+    {
+        do
+        {
+            Expect(&Scanner, TOKEN_GAME);
+            Expect(&Scanner, TOKEN_NUMBER);
+            int MaxCubes[3] = {0, 0, 0};
+            Expect(&Scanner, TOKEN_COLON);
+            if(Check(&Scanner, TOKEN_NUMBER))
+            {
+                do
+                {
+                    do
+                    {
+                        int Cubes = Number(&Scanner);
+                        Advance(&Scanner);
+                        int Color = Scanner.PrevToken.Type - TOKEN_RED;
+                        if(MaxCubes[Color] < Cubes) MaxCubes[Color] = Cubes;
+                    } while(Accept(&Scanner, TOKEN_COMMA));
+                } while(Accept(&Scanner, TOKEN_SEMICOLON));
+            }
+            Sum += MaxCubes[0] * MaxCubes[1] * MaxCubes[2];
+        } while(Accept(&Scanner, TOKEN_EOL));
+    }
+    return Sum;
 }
