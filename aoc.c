@@ -4,11 +4,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <windows.h>
 
 extern const char* DefaultInputPath;
 extern AOC_SOLVER(Part1);
 extern AOC_SOLVER(Part2);
+
+static void PrintUsage(const char* Prog)
+{
+    printf("usage: %s [<options>]\n\n", Prog);
+    printf("    -1  run part 1 only\n");
+    printf("    -2  run part 2 only\n");
+    printf("    -h  print this help\n");
+    printf("    -i  read input from stdin\n");
+    printf("    -q  quiet mode\n");
+    printf("    -e  echo puzzle input to stdout, then exit\n");
+}
 
 static char* ReadStandardInput(void)
 {
@@ -59,27 +70,30 @@ static char* ReadInputFile(const char* Path)
     return Buffer;
 }
 
-static void PrintUsage(const char* Prog)
+static double Clock(void)
 {
-    printf("usage: %s [<options>]\n\n", Prog);
-    printf("    -1  run part 1 only\n");
-    printf("    -2  run part 2 only\n");
-    printf("    -h  print this help\n");
-    printf("    -i  read input from stdin\n");
-    printf("    -q  quiet mode\n");
-    printf("    -e  echo puzzle input to stdout, then exit\n");
+    static double Frequency = 0;
+    if(!Frequency)
+    {
+        LARGE_INTEGER FrequencyInt;
+        QueryPerformanceFrequency(&FrequencyInt);
+        Frequency = (double)FrequencyInt.QuadPart;
+    }
+    LARGE_INTEGER Counter;
+    QueryPerformanceCounter(&Counter);
+    return (double)Counter.QuadPart / Frequency;
 }
 
 static void RunSolver(aoc_solver* Solver, const char* Input, bool Quiet)
 {
-    clock_t Start = clock();
+    double Start = Clock();
     int64_t Result = Solver(Input);
-    clock_t End = clock();
+    double End = Clock();
     if(Result == -1) return;
     printf("%-30lld", Result);
     if(!Quiet)
     {
-        printf(" %.4fs", (double)(End - Start) / CLOCKS_PER_SEC);
+        printf(" %.4fms", 1000 * (End - Start));
     }
     printf("\n");
 }
