@@ -87,7 +87,7 @@ static token Next(scanner* Scanner)
         Scanner->At += 3;
         return Token(Scanner, TOKEN_RED);
     default:
-        fprintf(stderr, "Unexpected character '%d' (%d).", C, '\n');
+        fprintf(stderr, "Unexpected character: %X.", C);
         exit(EXIT_FAILURE);
     }
 }
@@ -109,7 +109,7 @@ static void Expect(scanner* Scanner, int Type)
     {
         return Advance(Scanner);
     }
-    fprintf(stderr, "Unexpected token.");
+    fprintf(stderr, "Unexpected token: %d.", Scanner->CurrToken.Type);
     exit(EXIT_FAILURE);
 }
 
