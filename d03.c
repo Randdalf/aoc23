@@ -102,7 +102,53 @@ AOC_SOLVER(Part1)
     return Sum;
 }
 
+static int AddGearAdj(int* Numbers, int Number, int Count)
+{
+    if(Number == 0 || Count > 2) return Count;
+    for(int Index = 0; Index < Count; Index++)
+    {
+        if(Numbers[Index] == Number) return Count;
+    }
+    Numbers[Count++] = Number;
+    return Count;
+}
+
 AOC_SOLVER(Part2)
 {
-    return -1;
+    int64_t Sum = 0;
+    int Width, Height;
+    const char* Schematic = ParseSchematic(Input, &Width, &Height);
+    int Size = Width * Height;
+    int* Numbers = (int*)malloc(sizeof(int) * Size);
+    for(int Index = 0; Index < Size; Index++)
+    {
+        if(IsDigit(Schematic[Index]))
+        {
+            int Number = atoi(Schematic + Index);
+            do
+            {
+                Numbers[Index++] = Number;
+            } while(IsDigit(Schematic[Index]));
+        }
+        Numbers[Index] = 0;
+    }
+    int Index = 0;
+    for(int Index = 0; Index < Size; Index++)
+    {
+        if(Schematic[Index] != '*') continue;
+        int AdjNumbers[3];
+        int AdjCount = 0;
+        AdjCount = AddGearAdj(AdjNumbers, Numbers[Index - Width - 1], AdjCount);
+        AdjCount = AddGearAdj(AdjNumbers, Numbers[Index - Width], AdjCount);
+        AdjCount = AddGearAdj(AdjNumbers, Numbers[Index - Width + 1], AdjCount);
+        AdjCount = AddGearAdj(AdjNumbers, Numbers[Index - 1], AdjCount);
+        AdjCount = AddGearAdj(AdjNumbers, Numbers[Index + 1], AdjCount);
+        AdjCount = AddGearAdj(AdjNumbers, Numbers[Index + Width - 1], AdjCount);
+        AdjCount = AddGearAdj(AdjNumbers, Numbers[Index + Width], AdjCount);
+        AdjCount = AddGearAdj(AdjNumbers, Numbers[Index + Width + 1], AdjCount);
+        if(AdjCount == 2) Sum += AdjNumbers[0] * AdjNumbers[1];
+    }
+    free(Numbers);
+    free((void*)Schematic);
+    return Sum;
 }
