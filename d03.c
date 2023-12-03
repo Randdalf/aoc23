@@ -74,29 +74,26 @@ AOC_SOLVER(Part1)
     int64_t Sum = 0;
     int Width, Height;
     const char* Schematic = ParseSchematic(Input, &Width, &Height);
-    int Index = 0;
-    for(int Y = 0; Y < Height; Y++)
+    int Size = Width * Height;
+    for(int Index = 0; Index < Size; Index++)
     {
-        for(int X = 0; X < Width; X++, Index++)
+        if(!IsDigit(Schematic[Index])) continue;
+        int Number = atoi(Schematic + Index);
+        int LeftIndex = Index - 1;
+        do { Index++; } while(IsDigit(Schematic[Index]));
+        if(Schematic[LeftIndex] != '.') goto PartNumber;
+        if(Schematic[Index] != '.') goto PartNumber;
+        for(int TestIndex = LeftIndex - Width; TestIndex <= Index - Width; TestIndex++)
         {
-            if(!IsDigit(Schematic[Index])) continue;
-            int Number = atoi(Schematic + Index);
-            int LeftIndex = Index - 1;
-            do { Index++; X++; } while(IsDigit(Schematic[Index]));
-            if(Schematic[LeftIndex] != '.') goto PartNumber;
-            if(Schematic[Index] != '.') goto PartNumber;
-            for(int TestIndex = LeftIndex - Width; TestIndex <= Index - Width; TestIndex++)
-            {
-                if(Schematic[TestIndex] != '.') goto PartNumber;
-            }
-            for(int TestIndex = LeftIndex + Width; TestIndex <= Index + Width; TestIndex++)
-            {
-                if(Schematic[TestIndex] != '.') goto PartNumber;
-            }
-            continue;
-        PartNumber:
-            Sum += Number;
+            if(Schematic[TestIndex] != '.') goto PartNumber;
         }
+        for(int TestIndex = LeftIndex + Width; TestIndex <= Index + Width; TestIndex++)
+        {
+            if(Schematic[TestIndex] != '.') goto PartNumber;
+        }
+        continue;
+    PartNumber:
+        Sum += Number;
     }
     free((void*)Schematic);
     return Sum;
