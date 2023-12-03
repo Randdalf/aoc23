@@ -47,14 +47,14 @@ def test(day, part, input, expected):
         print(f'{color("light_red", "FAIL")} {id}: {fail}')
 
 
-d01_p1_e1 = """1abc2
+d01_e1 = """1abc2
 pqr3stu8vwx
 a1b2c3d4e5f
 treb7uchet"""
 
-test(1, 1, d01_p1_e1, "142")
+test(1, 1, d01_e1, "142")
 
-d01_p2_e1 = """two1nine
+d01_e2 = """two1nine
 eightwothree
 abcone2threexyz
 xtwone3four
@@ -62,13 +62,26 @@ xtwone3four
 zoneight234
 7pqrstsixteen"""
 
-test(1, 2, d01_p2_e1, "281")
+test(1, 2, d01_e2, "281")
 
-d02_p1_e1 = """Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+d02_e1 = """Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
 Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
 Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
 Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
 Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green"""
 
-test(2, 1, d02_p1_e1, "8")
-test(2, 2, d02_p1_e1, "2286")
+test(2, 1, d02_e1, "8")
+test(2, 2, d02_e1, "2286")
+
+d03_e1 = """467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598.."""
+
+test(3, 1, d03_e1, "4361")
