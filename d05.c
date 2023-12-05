@@ -178,7 +178,6 @@ AOC_SOLVER(Part2)
             Input = SkipPastDigits(Input);
             Input = SkipPastWhitespace(Input);
             int64_t RangeEnd = RangeStart + atoll(Input);
-            int64_t DestLength = -1;
             for(int Index = 0; Index < SeedRangesIn.Count; Index++)
             {
                 range SeedRange = SeedRangesIn.Elements[Index];
