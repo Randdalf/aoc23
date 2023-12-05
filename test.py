@@ -132,3 +132,4 @@ humidity-to-location map:
 56 93 4"""
 
 test(5, 1, d05_e1, "35")
+test(5, 2, d05_e1, "46")
