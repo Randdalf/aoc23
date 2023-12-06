@@ -42,6 +42,14 @@ static const char* SkipToDigits(const char* Input)
     return Input;
 }
 
+static int64_t MarginForError(double Time, double Dist)
+{
+    double Disc = sqrt(Time * Time - 4 * Dist);
+    int64_t Lo = (int64_t)floor((Time - Disc)/2 + 1);
+    int64_t Hi = (int64_t)ceil((Time + Disc)/2 - 1);
+    return Hi - Lo + 1;
+}
+
 AOC_SOLVER(Part1)
 {
     double Times[4];
@@ -60,25 +68,39 @@ AOC_SOLVER(Part1)
             Input = SkipPastDigits(Input);
             Input = SkipPastWhitespace(Input);
         }
-        Input = SkipPastWhitespace(Input);
+        Input = SkipPastNewline(Input);
     }
 
-    // Calculate margin for error in each record.
+    // Calculate product of margins of error in each record.
     int64_t Product = 1;
     for(int Index = 0; Index < Count; Index++)
     {
-        double Time = Times[Index];
-        double Dist = Dists[Index];
-        double Disc = sqrt(Time * Time - 4 * Dist);
-        int Lo = (int)floor((Time - Disc)/2 + 1);
-        int Hi = (int)ceil((Time + Disc)/2 - 1);
-        Product *= Hi - Lo + 1;
+        Product *= MarginForError(Times[Index], Dists[Index]);
     }
-
     return Product;
 }
 
 AOC_SOLVER(Part2)
 {
-    return -1;
+    double Data[2];
+    for(int Index = 0; Index < 2; Index++)
+    {
+        int64_t Number = 0;
+        Input = SkipToDigits(Input);
+        for(;;)
+        {
+            char C = *Input++;
+            if(IsDigit(C))
+            {
+                Number = (Number * 10) + (C - '0');
+            }
+            else if(C != ' ')
+            {
+                break;
+            }
+        }
+        Data[Index] = (double)Number;
+        Input = SkipPastNewline(Input);
+    }
+    return MarginForError(Data[0], Data[1]);
 }
