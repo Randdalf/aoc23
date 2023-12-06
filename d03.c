@@ -1,15 +1,7 @@
 #include "aoc.h"
-
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include "parse.h"
 
 const char* DefaultInputPath = "d03.txt";
-
-static bool IsDigit(char C)
-{
-    return C >= '0' && C <= '9';
-}
 
 static int GetInputWidth(const char* Input)
 {

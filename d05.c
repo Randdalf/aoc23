@@ -1,46 +1,7 @@
 #include "aoc.h"
-
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "parse.h"
 
 const char* DefaultInputPath = "d05.txt";
-
-static bool IsDigit(char C)
-{
-    return C >= '0' && C <= '9';
-}
-
-static bool IsWhitespace(char C)
-{
-    return C == ' ' || C == '\r';
-}
-
-static const char* SkipPastDigits(const char* Input)
-{
-    while(IsDigit(*Input)) Input++;
-    return Input;
-}
-
-static const char* SkipPastNewline(const char* Input)
-{
-    if(*Input == '\r') Input++;
-    if(*Input == '\n') Input++;
-    return Input;
-}
-
-static const char* SkipPastWhitespace(const char* Input)
-{
-    while(IsWhitespace(*Input)) Input++;
-    return Input;
-}
-
-static const char* SkipToDigits(const char* Input)
-{
-    while(!IsDigit(*Input)) Input++;
-    return Input;
-}
 
 AOC_SOLVER(Part1)
 {

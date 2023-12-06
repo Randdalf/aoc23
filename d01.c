@@ -1,6 +1,5 @@
 #include "aoc.h"
-
-#include <string.h>
+#include "parse.h"
 
 const char* DefaultInputPath = "d01.txt";
 
@@ -20,7 +19,7 @@ AOC_SOLVER(Part1)
     do
     {
         C = *Input++;
-        if(C >= '0' && C <= '9')
+        if(IsDigit(C))
         {
             DIGIT(C - '0');
         }

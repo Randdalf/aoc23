@@ -1,14 +1,7 @@
 #include "aoc.h"
-
-#include <stdbool.h>
-#include <stdlib.h>
+#include "parse.h"
 
 const char* DefaultInputPath = "d02.txt";
-
-static bool IsDigit(char C)
-{
-    return C >= '0' && C <= '9';
-}
 
 AOC_SOLVER(Part1)
 {
@@ -25,14 +18,12 @@ AOC_SOLVER(Part1)
             Input += 4;
             GameID = atoi(Input);
             Possible = true;
-            while(IsDigit(*Input)) Input++;
-            Input += 2;
+            Input = SkipPastDigits(Input) + 2;
             break;
         case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9':
             Cubes = atoi(Input - 1);
-            while(IsDigit(*Input)) Input++;
-            Input++;
+            Input = SkipPastDigits(Input) + 1;
             break;
         case 'r':
             Possible &= Cubes <= 12;
@@ -47,6 +38,8 @@ AOC_SOLVER(Part1)
             Input += 3;
             break;
         case ',':
+            Input++;
+            break;
         case ';':
             Input++;
             break;
@@ -72,14 +65,12 @@ AOC_SOLVER(Part2)
         case 'G':
             MaxRed = MaxBlue = MaxGreen = 0;
             Input += 4;
-            while(IsDigit(*Input)) Input++;
-            Input += 2;
+            Input = SkipPastDigits(Input) + 2;
             break;
         case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9':
             Cubes = atoi(Input - 1);
-            while(IsDigit(*Input)) Input++;
-            Input++;
+            Input = SkipPastDigits(Input) + 1;
             break;
         case 'r':
             if(Cubes > MaxRed) MaxRed = Cubes;

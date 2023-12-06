@@ -10,6 +10,7 @@ import datetime
 import pathlib
 
 template = '''#include "aoc.h"
+#include "parse.h"
 
 const char* DefaultInputPath = "d{day:02d}.txt";
 
