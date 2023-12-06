@@ -133,3 +133,8 @@ humidity-to-location map:
 
 test(5, 1, d05_e1, "35")
 test(5, 2, d05_e1, "46")
+
+d06_e1 = """Time:      7  15   30
+Distance:  9  40  200"""
+
+test(6, 1, d06_e1, "288")
