@@ -5,6 +5,7 @@ const char* DefaultInputPath = "d07.txt";
 
 enum
 {
+    RANK_JOKER,
     RANK_2,
     RANK_3,
     RANK_4,
@@ -105,14 +106,14 @@ static void HandArraySort(hand_array* Array)
     HandArrayQuickSort(Array->Elements, 0, Array->Count - 1);
 }
 
-static uint8_t ToType(int* HandCounts)
+static uint8_t ToType(int* CountCounts)
 {
-    switch(HandCounts[1])
+    switch(CountCounts[1])
     {
     case 0:
-        return HandCounts[5] ? TYPE_FIVE_OF_A_KIND : TYPE_FULL_HOUSE;
+        return CountCounts[5] ? TYPE_FIVE_OF_A_KIND : TYPE_FULL_HOUSE;
     case 1:
-        return HandCounts[4] ? TYPE_FOUR_OF_A_KIND : TYPE_TWO_PAIR;
+        return CountCounts[4] ? TYPE_FOUR_OF_A_KIND : TYPE_TWO_PAIR;
     case 2:
         return TYPE_THREE_OF_A_KIND;
     case 3:
@@ -123,11 +124,12 @@ static uint8_t ToType(int* HandCounts)
     }
 }
 
-AOC_SOLVER(Part1)
+int64_t Solve(const char* Input, bool UseJokers)
 {
     // Create the ASCII-to-rank lookup table.
     uint8_t CharToRank[UINT8_MAX + 1];
-    memset(CharToRank, RANK_2, sizeof(CharToRank));
+    memset(CharToRank, RANK_JOKER, sizeof(CharToRank));
+    CharToRank['2'] = RANK_2;
     CharToRank['3'] = RANK_3;
     CharToRank['4'] = RANK_4;
     CharToRank['5'] = RANK_5;
@@ -136,7 +138,7 @@ AOC_SOLVER(Part1)
     CharToRank['8'] = RANK_8;
     CharToRank['9'] = RANK_9;
     CharToRank['T'] = RANK_T;
-    CharToRank['J'] = RANK_J;
+    CharToRank['J'] = UseJokers ? RANK_JOKER : RANK_J;
     CharToRank['Q'] = RANK_Q;
     CharToRank['K'] = RANK_K;
     CharToRank['A'] = RANK_A;
@@ -146,23 +148,44 @@ AOC_SOLVER(Part1)
     InitHandArray(&Hands);
     while(*Input != '\0')
     {
-        int HandRanks[NUM_RANKS];
-        memset(HandRanks, 0, sizeof(HandRanks));
+        int RankCounts[NUM_RANKS];
+        memset(RankCounts, 0, sizeof(RankCounts));
         uint32_t Cards = 0;
         for(int Card = 0; Card < 5; Card++)
         {
             uint8_t Rank = CharToRank[*Input++];
             Cards = (Cards << 4) | Rank;
-            HandRanks[Rank]++;
+            RankCounts[Rank]++;
         }
 
-        int HandCounts[6];
-        memset(HandCounts, 0, sizeof(HandCounts));
-        for(int Rank = 0; Rank < NUM_RANKS; Rank++)
+        if(UseJokers)
         {
-            HandCounts[HandRanks[Rank]]++;
+            int JokerCount = RankCounts[RANK_JOKER];
+            if(JokerCount > 0)
+            {
+                int BestCount = 0;
+                int BestRank = RANK_JOKER;
+                for(int Rank = RANK_2; Rank < NUM_RANKS; Rank++)
+                {
+                    int RankCount = RankCounts[Rank];
+                    if(RankCount >= BestCount)
+                    {
+                        BestCount = RankCount;
+                        BestRank = Rank;
+                    }
+                }
+                RankCounts[RANK_JOKER] = 0;
+                RankCounts[BestRank] += JokerCount;
+            }
         }
-        Cards |= ToType(HandCounts) << 20;
+
+        int CountCounts[6];
+        memset(CountCounts, 0, sizeof(CountCounts));
+        for(int Rank = RANK_2; Rank < NUM_RANKS; Rank++)
+        {
+            CountCounts[RankCounts[Rank]]++;
+        }
+        Cards |= ToType(CountCounts) << 20;
 
         Input++;
         int Bid = atol(Input);
@@ -184,7 +207,12 @@ AOC_SOLVER(Part1)
     return Sum;
 }
 
+AOC_SOLVER(Part1)
+{
+    return Solve(Input, false);
+}
+
 AOC_SOLVER(Part2)
 {
-    return -1;
+    return Solve(Input, true);
 }
