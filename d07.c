@@ -45,20 +45,20 @@ typedef struct
     size_t Capacity;
 } hand_array;
 
-void InitHandArray(hand_array* Array)
+static void InitHandArray(hand_array* Array)
 {
     Array->Elements = NULL;
     Array->Count = 0;
     Array->Capacity = 0;
 }
 
-void FreeHandArray(hand_array* Array)
+static void FreeHandArray(hand_array* Array)
 {
     free(Array->Elements);
     InitHandArray(Array);
 }
 
-void HandArrayAdd(hand_array* Array, uint32_t Cards, int32_t Bid)
+static void HandArrayAdd(hand_array* Array, uint32_t Cards, int32_t Bid)
 {
     size_t Capacity = Array->Capacity;
     if(Array->Count == Capacity)
@@ -68,6 +68,41 @@ void HandArrayAdd(hand_array* Array, uint32_t Cards, int32_t Bid)
         Array->Capacity = Capacity;
     }
     Array->Elements[Array->Count++] = (hand){.Cards = Cards, .Bid = Bid};
+}
+
+static void HandArraySwap(hand* Hands, int FromIndex, int ToIndex)
+{
+    hand Temp = Hands[ToIndex];
+    Hands[ToIndex] = Hands[FromIndex];
+    Hands[FromIndex] = Temp;
+}
+
+static int HandArrayPartition(hand* Hands, int LoIndex, int HiIndex)
+{
+    hand Pivot = Hands[HiIndex];
+    int PivotIndex = LoIndex - 1;
+    for(int TestIndex = LoIndex; TestIndex < HiIndex; TestIndex++)
+    {
+        if(Hands[TestIndex].Cards <= Pivot.Cards)
+        {
+            HandArraySwap(Hands, ++PivotIndex, TestIndex);
+        }
+    }
+    HandArraySwap(Hands, ++PivotIndex, HiIndex);
+    return PivotIndex;
+}
+
+static void HandArrayQuickSort(hand* Hands, int LoIndex, int HiIndex)
+{
+    if(LoIndex >= HiIndex || LoIndex < 0) return;
+    int Pivot = HandArrayPartition(Hands, LoIndex, HiIndex);
+    HandArrayQuickSort(Hands, LoIndex, Pivot - 1);
+    HandArrayQuickSort(Hands, Pivot + 1, HiIndex);
+}
+
+static void HandArraySort(hand_array* Array)
+{
+    HandArrayQuickSort(Array->Elements, 0, Array->Count - 1);
 }
 
 static uint8_t ToType(int* HandCounts)
@@ -137,19 +172,8 @@ AOC_SOLVER(Part1)
         HandArrayAdd(&Hands, Cards, Bid);
     }
 
-    // Sort the hands (insertion sort).
-    for(int Index = 1; Index < Hands.Count; Index++)
-    {
-        hand Hand = Hands.Elements[Index];
-        int TestIndex = Index;
-        while(--TestIndex >= 0 && Hands.Elements[TestIndex].Cards > Hand.Cards)
-        {
-            Hands.Elements[TestIndex + 1] = Hands.Elements[TestIndex];
-        }
-        Hands.Elements[TestIndex + 1] = Hand;
-    }
-
-    // Determine the total winnings.
+    // Sort the hands and determine the total winnings.
+    HandArraySort(&Hands);
     int Sum = 0;
     for(int Index = 0; Index < Hands.Count; Index++)
     {
