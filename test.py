@@ -148,3 +148,22 @@ QQQJA 483"""
 
 test(7, 1, d07_e1, "6440")
 test(7, 2, d07_e1, "5905")
+
+d08_e1 = """RL
+
+AAA = (BBB, CCC)
+BBB = (DDD, EEE)
+CCC = (ZZZ, GGG)
+DDD = (DDD, DDD)
+EEE = (EEE, EEE)
+GGG = (GGG, GGG)
+ZZZ = (ZZZ, ZZZ)"""
+
+d08_e2 = """LLR
+
+AAA = (BBB, BBB)
+BBB = (AAA, ZZZ)
+ZZZ = (ZZZ, ZZZ)"""
+
+test(8, 1, d08_e1, "2")
+test(8, 1, d08_e2, "6")

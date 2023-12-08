@@ -25,6 +25,16 @@ static inline const char* SkipPastNewline(const char* Input)
     return Input;
 }
 
+static inline const char* SkipPastLine(const char* Input)
+{
+    char C = *Input;
+    while(C != '\n' && C != '\0')
+    {
+        C = *(++Input);
+    }
+    return SkipPastNewline(Input);
+}
+
 static inline const char* SkipPastWhitespace(const char* Input)
 {
     while(IsWhitespace(*Input)) Input++;
