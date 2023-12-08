@@ -153,6 +153,7 @@ AOC_SOLVER(Part2)
         OverallSteps = GhostIndex ? LCM(Steps, OverallSteps) : Steps;
     }
 
+    free(Ghosts);
     free(Ins);
     return OverallSteps;
 }
