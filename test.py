@@ -167,3 +167,16 @@ ZZZ = (ZZZ, ZZZ)"""
 
 test(8, 1, d08_e1, "2")
 test(8, 1, d08_e2, "6")
+
+d08_e3 = """LR
+
+YYA = (YYB, XXX)
+YYB = (XXX, YYZ)
+YYZ = (YYB, XXX)
+ZZA = (ZZB, XXX)
+ZZB = (ZZC, ZZC)
+ZZC = (ZZZ, ZZZ)
+ZZZ = (ZZB, ZZB)
+XXX = (XXX, XXX)"""
+
+test(8, 2, d08_e3, "6")
