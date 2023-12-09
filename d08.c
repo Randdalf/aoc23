@@ -109,7 +109,6 @@ AOC_SOLVER(Part2)
     {
         uint16_t Node, Left, Right;
         At = ParseNode(At, &Node) + 4;
-        char Blah = At[2];
         At = ParseNode(At, &Left) + 2;
         At = ParseNode(At, &Right) + 1;
         At = SkipPastNewline(At);
