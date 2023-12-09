@@ -99,7 +99,7 @@ int64_t Solve(const char* Input, bool Reverse)
         }
 
         // Reduce the sequence to zero, adding the end of each step to the sum.
-        // (As they will sum the next number in the sequence)
+        // (As they will sum the next number in the sequence.)
         while(!SequenceIsZero(&Sequence))
         {
             Sum += Sequence.Elements[Sequence.Count - 1];
