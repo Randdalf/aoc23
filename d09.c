@@ -40,6 +40,19 @@ static void SequenceReset(sequence* Sequence)
     Sequence->Count = 0;
 }
 
+static void SequenceReverse(sequence* Sequence)
+{
+    size_t Count = Sequence->Count;
+    size_t HalfCount = Count / 2;
+    for(int Index = 0; Index < HalfCount; Index++)
+    {
+        int ReverseIndex = Count - Index - 1;
+        int64_t Temp = Sequence->Elements[Index];
+        Sequence->Elements[Index] = Sequence->Elements[ReverseIndex];
+        Sequence->Elements[ReverseIndex] = Temp;
+    }
+}
+
 static bool SequenceIsZero(sequence* Sequence)
 {
     for(int Index = 0; Index < Sequence->Count; Index++)
@@ -63,7 +76,7 @@ static inline const char* SkipPastNumeric(const char* Input)
     return Input;
 }
 
-AOC_SOLVER(Part1)
+int64_t Solve(const char* Input, bool Reverse)
 {
     int64_t Sum = 0;
     sequence Sequence;
@@ -78,6 +91,12 @@ AOC_SOLVER(Part1)
             Input = SkipPastWhitespace(Input);
         }
         Input = SkipPastNewline(Input);
+
+        // Reverse the sequence if extrapolating backwards.
+        if(Reverse)
+        {
+            SequenceReverse(&Sequence);
+        }
 
         // Reduce the sequence to zero, adding the end of each step to the sum.
         // (As they will sum the next number in the sequence)
@@ -96,7 +115,12 @@ AOC_SOLVER(Part1)
     return Sum;
 }
 
+AOC_SOLVER(Part1)
+{
+    return Solve(Input, false);
+}
+
 AOC_SOLVER(Part2)
 {
-    return -1;
+    return Solve(Input, true);
 }
