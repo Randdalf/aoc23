@@ -28,7 +28,7 @@ def test(day, part, input, expected):
     flags = f'-i{part}q'
     key = (day, part)
     test_counter[key] += 1
-    id = f'D{day}P{part} #{test_counter[key]}'
+    id = f'D{day:02d}P{part} #{test_counter[key]}'
     fail = None
     try:
         result = subprocess.run([exe, flags], capture_output=True,
@@ -187,3 +187,18 @@ d09_e1 = """0 3 6 9 12 15
 
 test(9, 1, d09_e1, "114")
 test(9, 2, d09_e1, "2")
+
+d10_e1 = """.....
+.S-7.
+.|.|.
+.L-J.
+....."""
+
+d10_e2 = """..F7.
+.FJ|.
+SJ.L7
+|F--J
+LJ..."""
+
+test(10, 1, d10_e1, "4")
+test(10, 1, d10_e2, "8")
