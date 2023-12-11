@@ -44,11 +44,6 @@ static bool BitSetContains(bit_set* Set, uint64_t Index)
     return (Set->Bits[Index / 64llu] & (1llu << (Index % 64llu))) != 0;
 }
 
-static int BitSetCount(bit_set* Set)
-{
-    return (int)(__popcnt64(Set->Bits[0]) + __popcnt64(Set->Bits[1]) + __popcnt64(Set->Bits[2]));
-}
-
 typedef struct
 {
     int64_t X;
