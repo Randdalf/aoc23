@@ -51,14 +51,12 @@ static int BitSetCount(bit_set* Set)
 
 typedef struct
 {
-    int X;
-    int Y;
+    int64_t X;
+    int64_t Y;
 } ivec2;
 
-AOC_SOLVER(Part1)
+static int64_t Solve(const char* Input, int64_t Expansion)
 {
-    int Expansion = 2;
-
     // Scan the input, to determine which rows are empty and which contain
     // galaxies.
     bit_set EmptyRows, EmptyCols;
@@ -91,7 +89,7 @@ AOC_SOLVER(Part1)
     GalaxyCount = 0;
     Row = 0;
     At = Input;
-    int ExpandedRow = 0;
+    int64_t ExpandedRow = 0;
     while(IsImage(*At))
     {
         if(BitSetContains(&EmptyRows, Row))
@@ -102,7 +100,7 @@ AOC_SOLVER(Part1)
         else
         {
             int Col = 0;
-            int ExpandedCol = 0;
+            int64_t ExpandedCol = 0;
             while(IsImage(*At))
             {
                 if(BitSetContains(&EmptyCols, Col))
@@ -134,7 +132,7 @@ AOC_SOLVER(Part1)
         for(int ToIndex = FromIndex + 1; ToIndex < GalaxyCount; ToIndex++)
         {
             ivec2 To = Galaxies[ToIndex];
-            Sum += abs(To.X - From.X) + abs(To.Y - From.Y);
+            Sum += llabs(To.X - From.X) + llabs(To.Y - From.Y);
         }
     }
 
@@ -142,7 +140,12 @@ AOC_SOLVER(Part1)
     return Sum;
 }
 
+AOC_SOLVER(Part1)
+{
+    return Solve(Input, 2);
+}
+
 AOC_SOLVER(Part2)
 {
-    return -1;
+    return Solve(Input, 1000000);
 }
