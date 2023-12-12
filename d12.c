@@ -29,49 +29,50 @@ static const char* SkipPastConditions(const char* Input)
     return Input;
 }
 
-static int MatchesGroups(const char* Record, int Length, int* Groups, int GroupCount)
+static int CountArrangments(const char* Record, int Length, int At, int* Groups, int GroupCount, int GroupIndex, int Slack)
 {
-    int RecordIndex = 0;
-    for(int GroupIndex = 0; GroupIndex < GroupCount; GroupIndex++)
+    if(GroupIndex == GroupCount)
     {
-        while(RecordIndex < Length && IsOperational(Record[RecordIndex]))
+        // Check that all remaining springs could be operational before
+        // affirming this arrangement counts.
+        for(int Index = At; Index < Length; Index++)
         {
-            RecordIndex++;
+            if(IsBroken(Record[Index])) return 0;
         }
-        int GroupStart = RecordIndex;
-        while(RecordIndex < Length && IsBroken(Record[RecordIndex]))
-        {
-            RecordIndex++;
-        }
-        if(RecordIndex - GroupStart != Groups[GroupIndex])
-        {
-            return false;
-        }
+        return 1;
     }
-    while(RecordIndex < Length && IsOperational(Record[RecordIndex]))
-    {
-        RecordIndex++;
-    }
-    return RecordIndex == Length;
-}
 
-static int CountArrangments(const char* Record, int Length, char* Scratch, int Index, int* Groups, int GroupCount)
-{
-    while(Index < Length && !IsUnknown(Record[Index]))
+    int Group = Groups[GroupIndex];
+    int Arrangements = 0;
+    for(int Offset = 0; Offset <= Slack; Offset++)
     {
-        Scratch[Index] = Record[Index];
-        Index++;
+        // Check that all springs before the group can be operational.
+        int GroupStart = At + Offset;
+        for(int Index = At; Index < GroupStart; Index++)
+        {
+            if(IsBroken(Record[Index])) goto NextOffset;
+        }
+
+        // Check that all springs inside the group can be broken.
+        int GroupEnd = GroupStart + Group;
+        for(int Index = GroupStart; Index < GroupEnd; Index++)
+        {
+            if(IsOperational(Record[Index])) goto NextOffset;
+        }
+
+        // Check that the spring following the group can be operational.
+        if(GroupEnd < Length - 1)
+        {
+            if(IsBroken(Record[GroupEnd++])) goto NextOffset;
+        }
+
+        // We've found a good spot for our group.
+        Arrangements += CountArrangments(Record, Length, GroupEnd, Groups, GroupCount, GroupIndex + 1, Slack - Offset);
+
+    NextOffset:
+        ((void)0);
     }
-    if(Index == Length)
-    {
-        return MatchesGroups(Scratch, Length, Groups, GroupCount);
-    }
-    int Arrangments = 0;
-    Scratch[Index] = '.';
-    Arrangments += CountArrangments(Record, Length, Scratch, Index + 1, Groups, GroupCount);
-    Scratch[Index] = '#';
-    Arrangments += CountArrangments(Record, Length, Scratch, Index + 1, Groups, GroupCount);
-    return Arrangments;
+    return Arrangements;
 }
 
 AOC_SOLVER(Part1)
@@ -79,8 +80,6 @@ AOC_SOLVER(Part1)
     int64_t Sum = 0;
     size_t GroupCapacity = 16;
     int* Groups = (int*)malloc(sizeof(int) * GroupCapacity);
-    size_t ScratchCapacity = 32;
-    char* Scratch = (char*)malloc(sizeof(char) * ScratchCapacity);
     while(IsCondition(*Input))
     {
         const char* Record = Input;
@@ -88,6 +87,7 @@ AOC_SOLVER(Part1)
         int Length = Input - Record;
         Input++;
         size_t GroupCount = 0;
+        int NumBroken = 0;
         while(IsDigit(*Input))
         {
             if(GroupCount == GroupCapacity)
@@ -95,16 +95,14 @@ AOC_SOLVER(Part1)
                 GroupCapacity *= 2;
                 Groups = (int*)realloc(Groups, sizeof(int) * GroupCapacity);
             }
-            Groups[GroupCount++] = atoi(Input);
+            int Group = atoi(Input);
+            Groups[GroupCount++] = Group;
             Input = SkipPastDigits(Input);
+            NumBroken += Group;
             if(*Input == ',') Input++;
         }
-        while(Length > ScratchCapacity)
-        {
-            ScratchCapacity *= 2;
-            Scratch = (char*)realloc(Scratch, sizeof(char) * ScratchCapacity);
-        }
-        Sum += CountArrangments(Record, Length, Scratch, 0, Groups, GroupCount);
+        int Slack = Length - (NumBroken + GroupCount - 1);
+        Sum += CountArrangments(Record, Length, 0, Groups, GroupCount, 0, Slack);
         Input = SkipPastNewline(Input);
     }
     return Sum;
