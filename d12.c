@@ -275,7 +275,7 @@ static int64_t Solve(const char* Input, int Folds)
             Length = UnfoldedRecordLength;
         }
         int Slack = Length - (NumBroken + GroupCount - 1);
-        Sum += CountArrangements(&Cache, Record, Length, 0, Groups, GroupCount, 0, Slack);;
+        Sum += CountArrangements(&Cache, Record, Length, 0, Groups, GroupCount, 0, Slack);
         Input = SkipPastNewline(Input);
         TableReset(&Cache);
     }
