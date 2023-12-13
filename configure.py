@@ -21,6 +21,12 @@ def main():
             '-std=c11',
             '-D_CRT_SECURE_NO_WARNINGS',
             '-O3',
+            '-Wall',
+            '-Wextra',
+            '-Werror',
+            '-Wno-sign-compare',
+            '-Wno-char-subscripts',
+            '-pedantic'
         ]
         n.variable('cflags', ' '.join(cflags))
         n.newline()

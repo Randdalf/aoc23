@@ -121,7 +121,6 @@ AOC_SOLVER(Part2)
         }
         Numbers[Index] = 0;
     }
-    int Index = 0;
     for(int Index = 0; Index < Size; Index++)
     {
         if(Schematic[Index] != '*') continue;

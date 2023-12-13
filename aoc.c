@@ -123,7 +123,6 @@ int main(int ArgCount, const char** Args)
             PrintUsage(Args[0]);
             return EXIT_FAILURE;
         }
-        int Index = 1;
         for(int CharIndex = 1; Arg[CharIndex] != '\0'; CharIndex++)
         {
             switch(Arg[CharIndex])

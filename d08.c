@@ -8,12 +8,6 @@ static bool IsUpper(char C)
     return C >= 'A' && C <= 'Z';
 }
 
-static const char* SkipToUpper(const char* At)
-{
-    while(!IsUpper(*At)) At++;
-    return At;
-}
-
 static uint16_t MakeNode(char C0, char C1, char C2)
 {
     return ((C0 - 'A') << 10) | ((C1 - 'A') << 5) | (C2 - 'A');

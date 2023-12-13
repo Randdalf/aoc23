@@ -56,7 +56,7 @@ static void SliceArrayReset(slice_array* Array)
 
 typedef int (*check_reflection_fn)(slice_array* Slices, int Width);
 
-static int CheckReflectionWithSkip(slice_array* Slices, int Width, int SkipSliceIndex)
+static int CheckReflectionWithSkip(slice_array* Slices, int SkipSliceIndex)
 {
     for(int SliceIndex = 0; SliceIndex < Slices->Count - 1; SliceIndex++)
     {
@@ -76,7 +76,8 @@ static int CheckReflectionWithSkip(slice_array* Slices, int Width, int SkipSlice
 
 static int CheckReflection(slice_array* Slices, int Width)
 {
-    return CheckReflectionWithSkip(Slices, Width, -1);
+    AOC_UNUSED(Width);
+    return CheckReflectionWithSkip(Slices, -1);
 }
 
 static int CheckReflectionWithSmudge(slice_array* Slices, int Width)
@@ -88,7 +89,7 @@ static int CheckReflectionWithSmudge(slice_array* Slices, int Width)
         {
             uint32_t Flipper = 1 << BitIndex;
             Slices->Elements[SliceIndex] ^= Flipper;
-            int Result = CheckReflectionWithSkip(Slices, Width, SkipSliceIndex);
+            int Result = CheckReflectionWithSkip(Slices, SkipSliceIndex);
             Slices->Elements[SliceIndex] ^= Flipper;
             if(Result) return Result;
         }
@@ -103,7 +104,6 @@ static int64_t Solve(const char* Input, check_reflection_fn CheckReflectionFn)
     slice_array Rows, Cols;
     InitSliceArray(&Rows);
     InitSliceArray(&Cols);
-    int PatternNum = 0;
     while(IsPattern(*Input))
     {
         int Row = 0;

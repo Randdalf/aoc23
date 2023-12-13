@@ -112,6 +112,7 @@ int64_t Solve(const char* Input, bool Reverse)
 
         SequenceReset(&Sequence);
     }
+    FreeSequence(&Sequence);
     return Sum;
 }
 

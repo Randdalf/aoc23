@@ -147,10 +147,15 @@ static void TraverseLoop(const char* Input, void* User, on_loop_start OnLoopStar
 
 static void Noop(void* User, int InputWidth, int InputHeight)
 {
+    AOC_UNUSED(User);
+    AOC_UNUSED(InputWidth);
+    AOC_UNUSED(InputHeight);
 }
 
 static void IncrementStep(void* User, int Index, uint8_t Cell)
 {
+    AOC_UNUSED(Index);
+    AOC_UNUSED(Cell);
     (*((int*)User))++;
 }
 
