@@ -157,7 +157,7 @@ AOC_SOLVER(Part2)
                     {
                         Sum += (Index + 1) * (Slot++) * Lens->FocalLength;
                         lens* Next = Lens->Next;
-                        free(Next);
+                        free(Lens);
                         Lens = Next;
                     }
                 }
