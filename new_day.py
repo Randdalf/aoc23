@@ -16,11 +16,13 @@ const char* DefaultInputPath = "d{day:02d}.txt";
 
 AOC_SOLVER(Part1)
 {{
+    AOC_UNUSED(Input);
     return -1;
 }}
 
 AOC_SOLVER(Part2)
 {{
+    AOC_UNUSED(Input);
     return -1;
 }}'''
 
