@@ -57,10 +57,10 @@ static int MoveY[NUM_DIRS] = {-1, 0, 1, 0};
 
 typedef struct
 {
-    int X;
-    int Y;
-    int Dir;
-    int Cons;
+    int16_t X;
+    int16_t Y;
+    int8_t Dir;
+    int8_t Cons;
 } node;
 
 typedef node key;
@@ -245,7 +245,7 @@ static node PriorityQueuePop(priority_queue* Queue)
     return Node;
 }
 
-AOC_SOLVER(Part1)
+static int64_t Solve(const char* Input, int MinCons, int MaxCons)
 {
     grid Grid;
     InitGrid(&Grid, Input);
@@ -253,9 +253,12 @@ AOC_SOLVER(Part1)
     InitTable(&Dist);
     priority_queue Queue;
     InitPriorityQueue(&Queue);
-    node Source = (node){.X = 0, .Y = 0, .Dir = DIR_EAST, .Cons = 0};
-    TableSet(&Dist, Source, 0);
-    PriorityQueuePush(&Queue, Source, 0);
+    for(int Dir = 0; Dir < NUM_DIRS; Dir++)
+    {
+        node Source = (node){.X = 0, .Y = 0, .Dir = Dir, .Cons = 0};
+        TableSet(&Dist, Source, 0);
+        PriorityQueuePush(&Queue, Source, 0);
+    }
     int TargetX = Grid.Width - 1;
     int TargetY = Grid.Height - 1;
     int64_t Result = 0;
@@ -264,16 +267,23 @@ AOC_SOLVER(Part1)
         node Curr = PriorityQueuePop(&Queue);
         int64_t CurrDist;
         TableGet(&Dist, Curr, &CurrDist);
-        if(Curr.X == TargetX && Curr.Y == TargetY)
+        if(Curr.X == TargetX && Curr.Y == TargetY && Curr.Cons >= MinCons)
         {
             Result = CurrDist;
             break;
         }
-        static int Dirs[3];
-        Dirs[0] = (Curr.Dir + 3) % 4;
-        Dirs[1] = Curr.Dir;
-        Dirs[2] = (Curr.Dir + 1) % 4;
-        for(int DirIndex = 0; DirIndex < 3; DirIndex++)
+        int Dirs[3];
+        int DirCount = 0;
+        if(Curr.Cons < MaxCons)
+        {
+            Dirs[DirCount++] = Curr.Dir;
+        }
+        if(Curr.Cons >= MinCons)
+        {
+            Dirs[DirCount++] = (Curr.Dir + NUM_DIRS - 1) % NUM_DIRS;
+            Dirs[DirCount++] = (Curr.Dir + 1) % NUM_DIRS;
+        }
+        for(int DirIndex = 0; DirIndex < DirCount; DirIndex++)
         {
             int Dir = Dirs[DirIndex];
             node Neighbor;
@@ -281,9 +291,8 @@ AOC_SOLVER(Part1)
             Neighbor.Y = Curr.Y + MoveY[Dir];
             Neighbor.Dir = Dir;
             Neighbor.Cons = Dir == Curr.Dir ? Curr.Cons + 1 : 1;
-            if(Neighbor.Cons > 3) continue;
             if(Neighbor.X < 0 || Neighbor.X > TargetX) continue;
-            if(Neighbor.Y < 0 || Neighbor.Y > TargetX) continue;
+            if(Neighbor.Y < 0 || Neighbor.Y > TargetY) continue;
             int64_t NeighborDist;
             if(!TableGet(&Dist, Neighbor, &NeighborDist))
             {
@@ -303,8 +312,12 @@ AOC_SOLVER(Part1)
     return Result;
 }
 
+AOC_SOLVER(Part1)
+{
+    return Solve(Input, 0, 3);
+}
+
 AOC_SOLVER(Part2)
 {
-    AOC_UNUSED(Input);
-    return -1;
+    return Solve(Input, 4, 10);
 }
