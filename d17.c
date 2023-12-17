@@ -207,25 +207,42 @@ static void PriorityQueuePush(priority_queue* Queue, node Node, int64_t Dist)
         Queue->Entries = (entry*)realloc(Queue->Entries, sizeof(entry) * Capacity);
         Queue->Capacity = Capacity;
     }
-    Queue->Entries[Queue->Count++] = (entry){.Node = Node, .Dist = Dist};
+    int Index = Queue->Count++;
+    int ParentIndex = (Index - 1) / 2;
+    while(Index > 0 && Queue->Entries[ParentIndex].Dist > Dist)
+    {
+        Queue->Entries[Index] = Queue->Entries[ParentIndex];
+        Index = ParentIndex;
+        ParentIndex = (Index - 1) / 2;
+    }
+    Queue->Entries[Index] = (entry){.Node = Node, .Dist = Dist};
 }
 
-static node PriorityQueuePull(priority_queue* Queue)
+static node PriorityQueuePop(priority_queue* Queue)
 {
-    int MinIndex = 0;
-    entry MinEntry = Queue->Entries[0];
-    for(int Index = 1; Index < Queue->Count; Index++)
+    node Node = Queue->Entries[0].Node;
+    Queue->Entries[0] = Queue->Entries[--Queue->Count];
+    int Index = 0;
+    for(;;)
     {
-        entry Entry = Queue->Entries[Index];
-        if(Entry.Dist < MinEntry.Dist)
+        int MinIndex = Index;
+        int LeftIndex = 2 * Index + 1;
+        if(LeftIndex < Queue->Count && Queue->Entries[LeftIndex].Dist < Queue->Entries[MinIndex].Dist)
         {
-            MinIndex = Index;
-            MinEntry = Entry;
+            MinIndex = LeftIndex;
         }
+        int RightIndex = LeftIndex + 1;
+        if(RightIndex < Queue->Count && Queue->Entries[RightIndex].Dist < Queue->Entries[MinIndex].Dist)
+        {
+            MinIndex = RightIndex;
+        }
+        if(MinIndex == Index) break;
+        entry Temp = Queue->Entries[MinIndex];
+        Queue->Entries[MinIndex] = Queue->Entries[Index];
+        Queue->Entries[Index] = Temp;
+        Index = MinIndex;
     }
-    Queue->Count--;
-    memcpy(&Queue->Entries[MinIndex], &Queue->Entries[MinIndex + 1], sizeof(entry) * (Queue->Count - MinIndex));
-    return MinEntry.Node;
+    return Node;
 }
 
 AOC_SOLVER(Part1)
@@ -244,7 +261,7 @@ AOC_SOLVER(Part1)
     int64_t Result = 0;
     while(Queue.Count > 0)
     {
-        node Curr = PriorityQueuePull(&Queue);
+        node Curr = PriorityQueuePop(&Queue);
         int64_t CurrDist;
         TableGet(&Dist, Curr, &CurrDist);
         if(Curr.X == TargetX && Curr.Y == TargetY)
