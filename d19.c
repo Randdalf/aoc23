@@ -86,9 +86,8 @@ static const char* ParseTarget(const char* Input, rule* Rule)
     }
 }
 
-AOC_SOLVER(Part1)
+static const char* ParseWorkflows(const char* Input, rule*** OutWorkflows, rule** OutFreeList)
 {
-    // Parse the workflows into linked lists of rules, stored by numerical id.
     rule** Workflows = malloc(sizeof(rule*) * (27 * 27 * 27));
     rule* FreeList = NULL;
     while(IsLower(*Input))
@@ -117,7 +116,28 @@ AOC_SOLVER(Part1)
         }
         Input = SkipPastNewline(Input + 1);
     }
-    Input = SkipPastNewline(Input);
+    *OutWorkflows = Workflows;
+    *OutFreeList = FreeList;
+    return SkipPastNewline(Input);
+}
+
+static void FreeWorkflows(rule** Workflows, rule* FreeList)
+{
+    while(FreeList)
+    {
+        rule* Next = FreeList->FreeList;
+        free(FreeList);
+        FreeList = Next;
+    }
+    free(Workflows);
+}
+
+AOC_SOLVER(Part1)
+{
+    // Parse the workflows into linked lists of rules, stored by numerical id.
+    rule** Workflows;
+    rule* FreeList;
+    Input = ParseWorkflows(Input, &Workflows, &FreeList);
 
     // Run each part through the workflows, starting at "in", counting the
     // total ratings of the accepted parts.
@@ -162,20 +182,98 @@ AOC_SOLVER(Part1)
     NextPart:
         Input = SkipPastNewline(Input);
     }
+    FreeWorkflows(Workflows, FreeList);
+    return Result;
+}
 
-    while(FreeList)
+typedef struct
+{
+    int64_t Min;
+    int64_t Max;
+} range;
+
+static inline int64_t Min(int64_t A, int64_t B)
+{
+    return A < B ? A : B;
+}
+
+static inline int64_t Max(int64_t A, int64_t B)
+{
+    return A > B ? A : B;
+}
+
+static int64_t AcceptedCombinations(rule** Workflows, rule* Rule, range* AcceptedIn)
+{
+    int64_t Result = 0;
+    range AcceptedOut[4];
+    memcpy(AcceptedOut, AcceptedIn, sizeof(AcceptedOut));
+    while(Rule)
     {
-        rule* Next = FreeList->FreeList;
-        free(FreeList);
-        FreeList = Next;
-    }
+        // Modify the accepted ranges based on the condition passing.
+        range Range;
+        if(Rule->Cond != COND_NONE)
+        {
+            Range = AcceptedOut[Rule->Rating];
+            if(Rule->Cond == COND_LESS)
+            {
+                AcceptedOut[Rule->Rating].Max = Min(Range.Max, Rule->Cmp - 1);
+            }
+            else if(Rule->Cond == COND_GREATER)
+            {
+                AcceptedOut[Rule->Rating].Min = Max(Range.Min, Rule->Cmp + 1);
+            }
+        }
 
-    free(Workflows);
+        // Recurse into the linked workflow or, if the workflow terminates
+        // here, count the number of accepted combinations.
+        if(Rule->Target == TARGET_WORKFLOW)
+        {
+            Result += AcceptedCombinations(Workflows, Workflows[Rule->Id], AcceptedOut);
+        }
+        else if(Rule->Target == TARGET_ACCEPT)
+        {
+            int64_t Product = 1;
+            for(int Index = 0; Index < NUM_RATINGS; Index++)
+            {
+                Product *= 1 + AcceptedOut[Index].Max - AcceptedOut[Index].Min;
+            }
+            Result += Product;
+        }
+
+        // Modify the accepted ranges based on the condition failing.
+        if(Rule->Cond != COND_NONE)
+        {
+            AcceptedOut[Rule->Rating] = Range;
+            if(Rule->Cond == COND_LESS)
+            {
+                AcceptedOut[Rule->Rating].Min = Max(Range.Min, Rule->Cmp);
+            }
+            else if(Rule->Cond == COND_GREATER)
+            {
+                AcceptedOut[Rule->Rating].Max = Min(Range.Max, Rule->Cmp);
+            }
+        }
+
+        // Transition to the next part of the worklow.
+        Rule = Rule->Next;
+    }
     return Result;
 }
 
 AOC_SOLVER(Part2)
 {
-    AOC_UNUSED(Input);
-    return -1;
+    rule** Workflows;
+    rule* FreeList;
+    Input = ParseWorkflows(Input, &Workflows, &FreeList);
+    int StartId;
+    ParseId("in", &StartId);
+    rule* Start = Workflows[StartId];
+    range Accepted[4];
+    for(int Index = 0; Index < NUM_RATINGS; Index++)
+    {
+        Accepted[Index] = (range){.Min = 1, .Max = 4000};
+    }
+    int64_t Result = AcceptedCombinations(Workflows, Start, Accepted);
+    FreeWorkflows(Workflows, FreeList);
+    return Result;
 }
