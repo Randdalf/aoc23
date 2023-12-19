@@ -202,25 +202,26 @@ static inline int64_t Max(int64_t A, int64_t B)
     return A > B ? A : B;
 }
 
-static int64_t AcceptedCombinations(rule** Workflows, rule* Rule, range* AcceptedIn)
+static int64_t AcceptedCombinations(rule** Workflows, rule* Rule, range* Accepted)
 {
     int64_t Result = 0;
-    range AcceptedOut[4];
-    memcpy(AcceptedOut, AcceptedIn, sizeof(AcceptedOut));
+    range AcceptedCopy[4];
+    memcpy(AcceptedCopy, Accepted, sizeof(AcceptedCopy));
+    Accepted = AcceptedCopy;
     while(Rule)
     {
         // Modify the accepted ranges based on the condition passing.
         range Range;
         if(Rule->Cond != COND_NONE)
         {
-            Range = AcceptedOut[Rule->Rating];
+            Range = Accepted[Rule->Rating];
             if(Rule->Cond == COND_LESS)
             {
-                AcceptedOut[Rule->Rating].Max = Min(Range.Max, Rule->Cmp - 1);
+                Accepted[Rule->Rating].Max = Min(Range.Max, Rule->Cmp - 1);
             }
             else if(Rule->Cond == COND_GREATER)
             {
-                AcceptedOut[Rule->Rating].Min = Max(Range.Min, Rule->Cmp + 1);
+                Accepted[Rule->Rating].Min = Max(Range.Min, Rule->Cmp + 1);
             }
         }
 
@@ -228,14 +229,14 @@ static int64_t AcceptedCombinations(rule** Workflows, rule* Rule, range* Accepte
         // here, count the number of accepted combinations.
         if(Rule->Target == TARGET_WORKFLOW)
         {
-            Result += AcceptedCombinations(Workflows, Workflows[Rule->Id], AcceptedOut);
+            Result += AcceptedCombinations(Workflows, Workflows[Rule->Id], Accepted);
         }
         else if(Rule->Target == TARGET_ACCEPT)
         {
             int64_t Product = 1;
             for(int Index = 0; Index < NUM_RATINGS; Index++)
             {
-                Product *= 1 + AcceptedOut[Index].Max - AcceptedOut[Index].Min;
+                Product *= 1 + Accepted[Index].Max - Accepted[Index].Min;
             }
             Result += Product;
         }
@@ -243,14 +244,14 @@ static int64_t AcceptedCombinations(rule** Workflows, rule* Rule, range* Accepte
         // Modify the accepted ranges based on the condition failing.
         if(Rule->Cond != COND_NONE)
         {
-            AcceptedOut[Rule->Rating] = Range;
+            Accepted[Rule->Rating] = Range;
             if(Rule->Cond == COND_LESS)
             {
-                AcceptedOut[Rule->Rating].Min = Max(Range.Min, Rule->Cmp);
+                Accepted[Rule->Rating].Min = Max(Range.Min, Rule->Cmp);
             }
             else if(Rule->Cond == COND_GREATER)
             {
-                AcceptedOut[Rule->Rating].Max = Min(Range.Max, Rule->Cmp);
+                Accepted[Rule->Rating].Max = Min(Range.Max, Rule->Cmp);
             }
         }
 
