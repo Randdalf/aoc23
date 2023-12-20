@@ -82,7 +82,7 @@ static void PulseQueuePush(pulse_queue* Queue, uint16_t Id, uint8_t Value, uint8
 {
     if(Queue->Count == Queue->Capacity)
     {
-        size_t NewCapacity = Queue->Capacity ? Queue->Capacity * 2 : 8;
+        size_t NewCapacity = Queue->Capacity ? Queue->Capacity * 2 : 64;
         pulse* NewBuffer = (pulse*)malloc(sizeof(pulse) * NewCapacity);
         if(Queue->Head < Queue->Tail)
         {
@@ -114,7 +114,10 @@ static pulse PulseQueuePull(pulse_queue* Queue)
     return Pulse;
 }
 
-AOC_SOLVER(Part1)
+typedef void (*on_pulse_fn)(void* User, int64_t Push, pulse Pulse);
+typedef bool (*should_push_fn)(void* User, int64_t Push);
+
+static void Solve(const char* Input, should_push_fn ShouldPushFn, on_pulse_fn OnPulseFn, void* User)
 {
     module* Modules = (module*)calloc(26 * 26 + 1, sizeof(module));
     while(IsModule(*Input))
@@ -143,25 +146,16 @@ AOC_SOLVER(Part1)
         }
         Input = SkipPastLine(Input);
     }
-    int64_t Lo = 0;
-    int64_t Hi = 0;
     pulse_queue Pending;
     InitPulseQueue(&Pending);
-    for(int Push = 0; Push < 1000; Push++)
+    for(int64_t Push = 0; ShouldPushFn(User, Push); Push++)
     {
         PulseQueuePush(&Pending, 0, 0, 0);
         while(Pending.Count > 0)
         {
             pulse Pulse = PulseQueuePull(&Pending);
-            if(Pulse.Value)
-            {
-                Hi++;
-            }
-            else
-            {
-                Lo++;
-            }
             module* Module = &Modules[Pulse.Id];
+            OnPulseFn(User, Push, Pulse);
             switch(Module->Type)
             {
             case MODULE_BROADCASTER:
@@ -193,11 +187,53 @@ AOC_SOLVER(Part1)
     }
     FreePulseQueue(&Pending);
     free(Modules);
-    return Lo * Hi;
+}
+
+static bool LessThan1000(void* User, int64_t Push)
+{
+    AOC_UNUSED(User);
+    return Push < 1000;
+}
+
+static void CountPulses(void* User, int64_t Push, pulse Pulse)
+{
+    AOC_UNUSED(Push);
+    ((int64_t*)User)[Pulse.Value]++;
+}
+
+AOC_SOLVER(Part1)
+{
+    int64_t Counters[2] = {0, 0};
+    Solve(Input, LessThan1000, CountPulses, Counters);
+    return Counters[0] * Counters[1];
+}
+
+typedef struct
+{
+    int64_t Pushes[4];
+    uint16_t Jz;
+    uint16_t NumFound;
+} params;
+
+static bool UntilAllJzPushesFound(void* User, int64_t Push)
+{
+    AOC_UNUSED(Push);
+    return ((params*)User)->NumFound < 4;
+}
+
+static void FindJzPushes(void* User, int64_t Push, pulse Pulse)
+{
+    params* Params = (params*)User;
+    if(!Pulse.Value || Pulse.Id != Params->Jz) return;
+    Params->Pushes[Pulse.Pin] = Push + 1;
+    Params->NumFound++;
 }
 
 AOC_SOLVER(Part2)
 {
-    AOC_UNUSED(Input);
-    return -1;
+    params Params;
+    memset(&Params, 0, sizeof(params));
+    ParseId("jz", &Params.Jz); // Penultimate conjunction before "rx".
+    Solve(Input, UntilAllJzPushesFound, FindJzPushes, &Params);
+    return Params.Pushes[0] * Params.Pushes[1] * Params.Pushes[2] * Params.Pushes[3];
 }
