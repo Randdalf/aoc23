@@ -67,6 +67,7 @@ typedef struct
 
 static void InitPulseQueue(pulse_queue* Queue)
 {
+    Queue->Count = 0;
     Queue->Capacity = 0;
     Queue->Buffer = NULL;
     Queue->Head = 0;
