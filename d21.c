@@ -62,12 +62,12 @@ static void InitGrid(grid* Grid, const char* Input)
     Grid->Width = Grid->Count / Grid->Height;
 }
 
-typedef struct
+static void FreeGrid(grid* Grid)
 {
-    int64_t X;
-    int64_t Y;
-} key;
+    free(Grid->Cells);
+}
 
+typedef ivec2 key;
 typedef uint8_t value;
 
 typedef struct
@@ -153,14 +153,27 @@ static void TableSet(table* Table, key Key, value Value)
     }
 }
 
-static int64_t Solve(const char* Input, int64_t NumSteps)
+static const char* ParseOptionalNumSteps(const char* Input, int64_t* OutNumSteps)
 {
     if(IsDigit(*Input))
     {
-        NumSteps = 0;
+        int64_t NumSteps = 0;
         while(IsDigit(*Input)) NumSteps = NumSteps * 10 + *Input++ - '0';
         Input = SkipPastNewline(Input);
+        *OutNumSteps = NumSteps;
     }
+    return Input;
+}
+
+static bool GridIsNotRock(grid* Grid, ivec2 Key)
+{
+    return Grid->Cells[Key.Y * Grid->Width + Key.X] != '#';
+}
+
+AOC_SOLVER(Part1)
+{
+    int64_t NumSteps = 64;
+    Input = ParseOptionalNumSteps(Input, &NumSteps);
     grid Grid;
     InitGrid(&Grid, Input);
     table Tables[2];
@@ -181,7 +194,7 @@ static int64_t Solve(const char* Input, int64_t NumSteps)
             if(Key.Y > 0)
             {
                 key North = (key){.X = Key.X, .Y = Key.Y - 1};
-                if(Grid.Cells[North.Y * Grid.Width + North.X] != '#')
+                if(GridIsNotRock(&Grid, North))
                 {
                     TableSet(To, North, 1);
                 }
@@ -189,7 +202,7 @@ static int64_t Solve(const char* Input, int64_t NumSteps)
             if(Key.X < Grid.Width - 1)
             {
                 key East = (key){.X = Key.X + 1, .Y = Key.Y};
-                if(Grid.Cells[East.Y * Grid.Width + East.X] != '#')
+                if(GridIsNotRock(&Grid, East))
                 {
                     TableSet(To, East, 1);
                 }
@@ -197,7 +210,7 @@ static int64_t Solve(const char* Input, int64_t NumSteps)
             if(Key.Y < Grid.Height - 1)
             {
                 key South = (key){.X = Key.X, .Y = Key.Y + 1};
-                if(Grid.Cells[South.Y * Grid.Width + South.X] != '#')
+                if(GridIsNotRock(&Grid, South))
                 {
                     TableSet(To, South, 1);
                 }
@@ -205,23 +218,91 @@ static int64_t Solve(const char* Input, int64_t NumSteps)
             if(Key.X > 0)
             {
                 key West = (key){.X = Key.X - 1, .Y = Key.Y};
-                if(Grid.Cells[West.Y * Grid.Width + West.X] != '#')
+                if(GridIsNotRock(&Grid, West))
                 {
                     TableSet(To, West, 1);
                 }
             }
         }
     }
-    return Tables[TableIndex].Count;
+    int64_t Result = Tables[TableIndex].Count;
+    FreeTable(&Tables[0]);
+    FreeTable(&Tables[1]);
+    FreeGrid(&Grid);
+    return Result;
 }
 
-AOC_SOLVER(Part1)
+static bool GridIsNotRockInfinite(grid* Grid, ivec2 Key)
 {
-    return Solve(Input, 64);
+    int X = Key.X % Grid->Width;
+    if(X < 0) X += Grid->Width;
+    int Y = Key.Y % Grid->Height;
+    if(Y < 0) Y += Grid->Height;
+    return Grid->Cells[Y * Grid->Width + X] != '#';
 }
 
 AOC_SOLVER(Part2)
 {
-    AOC_UNUSED(Input);
-    return -1;
+    int64_t NumSteps = 26501365;
+    grid Grid;
+    InitGrid(&Grid, Input);
+    table Tables[2];
+    InitTable(&Tables[0]);
+    InitTable(&Tables[1]);
+    int TableIndex = 0;
+    TableSet(&Tables[TableIndex], (key){.X = Grid.Start.X, .Y = Grid.Start.Y}, 1);
+    int* Deltas = (int*)malloc(sizeof(int) * Grid.Width);
+    int* DeltaDeltas = (int*)malloc(sizeof(int) * Grid.Width);
+    for(int64_t Step = 0; Step < Grid.Width * 2; Step++)
+    {
+        table* From = &Tables[TableIndex];
+        table* To = &Tables[1 - TableIndex];
+        TableReset(To);
+        TableIndex = 1 - TableIndex;
+        for(int Index = 0; Index < From->Capacity; Index++)
+        {
+            if(!From->Slots[Index]) continue;
+            key Key = From->Keys[Index];
+            key North = (key){.X = Key.X, .Y = Key.Y - 1};
+            if(GridIsNotRockInfinite(&Grid, North))
+            {
+                TableSet(To, North, 1);
+            }
+            key East = (key){.X = Key.X + 1, .Y = Key.Y};
+            if(GridIsNotRockInfinite(&Grid, East))
+            {
+                TableSet(To, East, 1);
+            }
+            key South = (key){.X = Key.X, .Y = Key.Y + 1};
+            if(GridIsNotRockInfinite(&Grid, South))
+            {
+                TableSet(To, South, 1);
+            }
+            key West = (key){.X = Key.X - 1, .Y = Key.Y};
+            if(GridIsNotRockInfinite(&Grid, West))
+            {
+                TableSet(To, West, 1);
+            }
+        }
+        int DeltaIndex = Step % Grid.Width;
+        int NewDelta = To->Count - From->Count;
+        if(Step >= Grid.Width)
+        {
+            DeltaDeltas[DeltaIndex] = NewDelta - Deltas[DeltaIndex];
+        }
+        Deltas[DeltaIndex] = NewDelta;
+    }
+    int64_t Result = Tables[TableIndex].Count;
+    for(int64_t Step = Grid.Width * 2; Step < NumSteps; Step++)
+    {
+        int DeltaIndex = Step % Grid.Width;
+        Deltas[DeltaIndex] += DeltaDeltas[DeltaIndex];
+        Result += Deltas[DeltaIndex];
+    }
+    free(DeltaDeltas);
+    free(Deltas);
+    FreeTable(&Tables[0]);
+    FreeTable(&Tables[1]);
+    FreeGrid(&Grid);
+    return Result;
 }
