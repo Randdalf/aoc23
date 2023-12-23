@@ -74,7 +74,7 @@ typedef struct
     int16_t NeighborDists[NUM_DIRS];
 } node;
 
-static bool FindNodeingPoint(grid* Grid, int16_t* Lookup, int X, int Y, int Dist, int InDir, int16_t* OutIndex, int16_t* OutDist)
+static bool FindBranchingPoint(grid* Grid, int16_t* Lookup, int X, int Y, int Dist, int InDir, int16_t* OutIndex, int16_t* OutDist)
 {
     if(X < 0 || X >= Grid->Width) return false;
     if(Y < 0 || Y >= Grid->Height) return false;
@@ -105,7 +105,7 @@ static bool FindNodeingPoint(grid* Grid, int16_t* Lookup, int X, int Y, int Dist
     for(int Dir = 0; Dir < NUM_DIRS; Dir++)
     {
         if(Dir == OppositeDir) continue;
-        if(FindNodeingPoint(Grid, Lookup, X + MoveX[Dir], Y + MoveY[Dir], Dist + 1, Dir, OutIndex, OutDist)) return true;
+        if(FindBranchingPoint(Grid, Lookup, X + MoveX[Dir], Y + MoveY[Dir], Dist + 1, Dir, OutIndex, OutDist)) return true;
     }
     return false;
 }
@@ -143,7 +143,7 @@ static int64_t Solve(const char* Input, bool RemoveSlopes)
         }
     }
 
-    // Find nodeing points in the graph.
+    // Find branching points in the graph.
     size_t NodeCount = 0;
     size_t NodeCapacity = 64;
     node* Nodes = (node*)malloc(sizeof(node) * NodeCapacity);
@@ -182,14 +182,14 @@ static int64_t Solve(const char* Input, bool RemoveSlopes)
         }
     }
 
-    // Form a smaller graph consisting only of the nodeing points.
+    // Form a smaller graph consisting only of the branching points.
     for(int NodeIndex = 0; NodeIndex < NodeCount; NodeIndex++)
     {
         node* Node = &Nodes[NodeIndex];
         for(int Dir = 0; Dir < NUM_DIRS; Dir++)
         {
             int16_t NeighborIndex, NeighborDist;
-            if(FindNodeingPoint(&Grid, NodeLookup, Node->X + MoveX[Dir], Node->Y + MoveY[Dir], 1, Dir, &NeighborIndex, &NeighborDist))
+            if(FindBranchingPoint(&Grid, NodeLookup, Node->X + MoveX[Dir], Node->Y + MoveY[Dir], 1, Dir, &NeighborIndex, &NeighborDist))
             {
                 Node->NeighborIndices[Node->NeighborCount] = NeighborIndex;
                 Node->NeighborDists[Node->NeighborCount] = NeighborDist;
