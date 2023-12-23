@@ -10,12 +10,16 @@ typedef struct
     int Z;
 } coord;
 
-typedef struct
+#define BRICK_MAX_CHILDREN (4)
+
+typedef struct brick
 {
     coord Start;
     coord End;
+    int Children[BRICK_MAX_CHILDREN];
+    int NumChildren;
+    int NumSupports;
     int Unsafe;
-    int LastSupportedIndex;
 } brick;
 
 typedef struct
@@ -110,7 +114,22 @@ static inline int Max(int A, int B)
     return A > B ? A : B;
 }
 
-AOC_SOLVER(Part1)
+static bool BrickAddChild(brick* Brick, int BrickIndex)
+{
+    for(int Index = 0; Index < Brick->NumChildren; Index++)
+    {
+        if(Brick->Children[Index] == BrickIndex) return false;
+    }
+    if(Brick->NumChildren == BRICK_MAX_CHILDREN)
+    {
+        fprintf(stderr, "Increase BRICK_MAX_CHILDREN to %d\n", BRICK_MAX_CHILDREN + 1);
+        exit(EXIT_FAILURE);
+    }
+    Brick->Children[Brick->NumChildren++] = BrickIndex;
+    return true;
+}
+
+brick_array SimulateBricks(const char* Input)
 {
     // Parse the bricks into an array and sort them by their height off the
     // ground.
@@ -156,51 +175,90 @@ AOC_SOLVER(Part1)
         Brick->End.Z -= ZOffset;
 
         // Blit the brick into the depth map, and simultaneously count all the
-        // bricks supporting it.
-        int NumSupporting = 0;
-        int LastSupportingIndex = -1;
+        // bricks supporting it. Add this brick to the child arrays of any
+        // bricks supporting this one.
+        int NumSupports = 0;
+        brick* LastSupporting = NULL;
         for(int Y = Brick->Start.Y; Y <= Brick->End.Y; Y++)
         {
             for(int X = Brick->Start.X; X <= Brick->End.X; X++)
             {
                 depth_cell* Cell = &DepthMap[Y * Width + X];
-                if(MaxHeight > 0
-                    && Cell->Height == MaxHeight
-                    && Bricks.Elements[Cell->BrickIndex].LastSupportedIndex != BrickIndex)
+                if(MaxHeight > 0 && Cell->Height == MaxHeight)
                 {
-                    NumSupporting++;
-                    LastSupportingIndex = Cell->BrickIndex;
-                    Bricks.Elements[Cell->BrickIndex].LastSupportedIndex = BrickIndex;
+                    brick* Supporting = &Bricks.Elements[Cell->BrickIndex];
+                    if(BrickAddChild(Supporting, BrickIndex))
+                    {
+                        NumSupports++;
+                        LastSupporting = Supporting;
+                    }
                 }
                 Cell->Height = Brick->End.Z;
                 Cell->BrickIndex = BrickIndex;
             }
         }
+        Brick->NumSupports = NumSupports;
 
         // If this brick has only one support, mark that support as unsafe.
-        if(NumSupporting == 1)
+        if(NumSupports == 1)
         {
-            Bricks.Elements[LastSupportingIndex].Unsafe = 1;
+            LastSupporting->Unsafe = 1;
         }
-
-        // Take this opportunity to reset the last supported index (all bricks
-        // this one can support are sorted after it in the bricks array).
-        Brick->LastSupportedIndex = -1;
     }
 
+    free(DepthMap);
+    return Bricks;
+}
+
+AOC_SOLVER(Part1)
+{
     // Subtract unsafe bricks to count bricks that can be safely disintegrated.
+    brick_array Bricks = SimulateBricks(Input);
     int64_t Result = Bricks.Count;
     for(int BrickIndex = 0; BrickIndex < Bricks.Count; BrickIndex++)
     {
         Result -= Bricks.Elements[BrickIndex].Unsafe;
     }
-
     FreeBrickArray(&Bricks);
     return Result;
 }
 
+static void DisintegrateBricks(brick_array* Bricks, int BrickIndex, uint8_t* RemovedSupports)
+{
+    brick* Brick = &Bricks->Elements[BrickIndex];
+    for(int ChildIndex = 0; ChildIndex < Brick->NumChildren; ChildIndex++)
+    {
+        int ChildBrickIndex = Brick->Children[ChildIndex];
+        brick* Child = &Bricks->Elements[ChildBrickIndex];
+        RemovedSupports[ChildBrickIndex]++;
+        if(RemovedSupports[ChildBrickIndex] == Child->NumSupports)
+        {
+            DisintegrateBricks(Bricks, ChildBrickIndex, RemovedSupports);
+        }
+    }
+}
+
 AOC_SOLVER(Part2)
 {
-    AOC_UNUSED(Input);
-    return -1;
+    // Count all the bricks which have their supports removed when a brick is
+    // disintegrated.
+    brick_array Bricks = SimulateBricks(Input);
+    int64_t Result = 0;
+    uint8_t* RemovedSupports = (uint8_t*)malloc(sizeof(uint8_t) * Bricks.Count);
+    for(int BrickIndex = 0; BrickIndex < Bricks.Count; BrickIndex++)
+    {
+        memset(RemovedSupports, 0, sizeof(uint8_t) * Bricks.Count);
+        DisintegrateBricks(&Bricks, BrickIndex, RemovedSupports);
+        for(int TestIndex = BrickIndex + 1; TestIndex < Bricks.Count; TestIndex++)
+        {
+            int NumSupports = Bricks.Elements[TestIndex].NumSupports;
+            if(NumSupports > 0 && NumSupports == RemovedSupports[TestIndex])
+            {
+                Result++;
+            }
+        }
+    }
+    free(RemovedSupports);
+    FreeBrickArray(&Bricks);
+    return Result;
 }
