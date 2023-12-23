@@ -15,9 +15,14 @@ typedef struct
     int Height;
 } grid;
 
+static bool IsSlope(char C)
+{
+    return C == '^' || C == '>' || C == 'v' || C == '<';
+}
+
 static bool IsGrid(char C)
 {
-    return C == '#' || C == '.' || C == '^' || C == '>' || C == 'v' || C == '<';
+    return C == '#' || C == '.' || IsSlope(C);
 }
 
 static void InitGrid(grid* Grid, const char* Input)
@@ -62,6 +67,7 @@ static int MoveY[NUM_DIRS] = {-1, 0, 1, 0};
 
 typedef struct
 {
+    uint64_t Visited;
     int16_t X;
     int16_t Y;
     int16_t Dir;
@@ -249,6 +255,17 @@ static node PriorityQueuePop(priority_queue* Queue)
     return Node;
 }
 
+static node MakeNode(uint64_t Visited, int16_t X, int16_t Y, int16_t Dir)
+{
+    node Node;
+    memset(&Node, 0, sizeof(node));
+    Node.Visited = Visited;
+    Node.X = X;
+    Node.Y = Y;
+    Node.Dir = Dir;
+    return Node;
+}
+
 AOC_SOLVER(Part1)
 {
     grid Grid;
@@ -257,7 +274,7 @@ AOC_SOLVER(Part1)
     InitTable(&Dist);
     priority_queue Queue;
     InitPriorityQueue(&Queue);
-    node Source = (node){.X = 1, .Y = 0, .Dir = DIR_SOUTH};
+    node Source = MakeNode(0, 1, 0, DIR_SOUTH);
     TableSet(&Dist, Source, 0);
     PriorityQueuePush(&Queue, Source, 0);
     while(Queue.Count > 0)
@@ -289,15 +306,12 @@ AOC_SOLVER(Part1)
             Dirs[DirCount++] = DIR_WEST;
             break;
         }
-        int AntiDir = (Curr.Dir + 2) % NUM_DIRS;
+        int OppositeDir = (Curr.Dir + 2) % NUM_DIRS;
         for(int DirIndex = 0; DirIndex < DirCount; DirIndex++)
         {
             int Dir = Dirs[DirIndex];
-            if(Dir == AntiDir) continue;
-            node Neighbor;
-            Neighbor.X = Curr.X + MoveX[Dir];
-            Neighbor.Y = Curr.Y + MoveY[Dir];
-            Neighbor.Dir = Dir;
+            if(Dir == OppositeDir) continue;
+            node Neighbor = MakeNode(0, Curr.X + MoveX[Dir], Curr.Y + MoveY[Dir], Dir);
             if(Neighbor.X < 0 || Neighbor.X >= Grid.Width) continue;
             if(Neighbor.Y < 0 || Neighbor.Y >= Grid.Height) continue;
             char NeighborC = Grid.Cells[Neighbor.Y * Grid.Width + Neighbor.X];
@@ -315,10 +329,7 @@ AOC_SOLVER(Part1)
             }
         }
     }
-    node Target;
-    Target.X = Grid.Width - 2;
-    Target.Y = Grid.Height - 1;
-    Target.Dir = DIR_SOUTH;
+    node Target = MakeNode(0, Grid.Width - 2, Grid.Height - 1, DIR_SOUTH);
     int64_t Result;
     TableGet(&Dist, Target, &Result);
     FreePriorityQueue(&Queue);
@@ -327,8 +338,154 @@ AOC_SOLVER(Part1)
     return -Result;
 }
 
+static bool FindBranchingPoint(grid* Grid, int16_t* Lookup, int X, int Y, int Dist, int InDir, int16_t* OutIndex, int16_t* OutDist)
+{
+    if(X < 0 || X >= Grid->Width) return false;
+    if(Y < 0 || Y >= Grid->Height) return false;
+    int Index =  Y * Grid->Width + X;
+    char C = Grid->Cells[Index];
+    if(C == '+')
+    {
+        *OutIndex = Lookup[Index];
+        *OutDist = Dist;
+        return true;
+    }
+    if(C == '#') return false;
+    int OppositeDir = (InDir + 2) % NUM_DIRS;
+    for(int Dir = 0; Dir < NUM_DIRS; Dir++)
+    {
+        if(Dir == OppositeDir) continue;
+        if(FindBranchingPoint(Grid, Lookup, X + MoveX[Dir], Y + MoveY[Dir], Dist + 1, Dir, OutIndex, OutDist)) return true;
+    }
+    return false;
+}
+
+typedef struct
+{
+    int X;
+    int Y;
+    int NeighborCount;
+    int16_t NeighborIndices[NUM_DIRS];
+    int16_t NeighborDists[NUM_DIRS];
+} branch;
+
 AOC_SOLVER(Part2)
 {
-    AOC_UNUSED(Input);
-    return -1;
+    grid Grid;
+    InitGrid(&Grid, Input);
+
+    // Remove all slopes.
+    for(int Index = 0; Index < Grid.Count; Index++)
+    {
+        if(IsSlope(Grid.Cells[Index]))
+        {
+            Grid.Cells[Index] = '.';
+        }
+    }
+
+    // Find branching points in the graph.
+    size_t BranchCount = 0;
+    size_t BranchCapacity = 64;
+    branch* Branches = (branch*)malloc(sizeof(branch) * BranchCapacity);
+    int16_t* BranchLookup = (int16_t*)calloc(Grid.Count, sizeof(int16_t));
+    int GridIndex = 0;
+    for(int Y = 0; Y < Grid.Height; Y++)
+    {
+        for(int X = 0; X < Grid.Width; X++, GridIndex++)
+        {
+            char C = Grid.Cells[GridIndex];
+            int NumNeighbors = 0;
+            if(C == '.')
+            {
+                if(Y > 0)
+                {
+                    NumNeighbors += Grid.Cells[GridIndex - Grid.Width] != '#';
+                }
+                if(X < Grid.Width - 1)
+                {
+                    NumNeighbors += Grid.Cells[GridIndex + 1] != '#';
+                }
+                if(Y < Grid.Height - 1)
+                {
+                    NumNeighbors += Grid.Cells[GridIndex + Grid.Width] != '#';
+                }
+                if(X > 0)
+                {
+                    NumNeighbors += Grid.Cells[GridIndex - 1] != '#';
+                }
+            }
+            if(NumNeighbors > 2 || (X == 1 && Y == 0) || (X == Grid.Width - 2 && Y == Grid.Height - 1))
+            {
+                if(BranchCount == BranchCapacity)
+                {
+                    BranchCapacity *= 2;
+                    Branches = (branch*)realloc(Branches, sizeof(branch) * BranchCapacity);
+                }
+                Branches[BranchCount] = (branch){.X = X, .Y = Y, .NeighborCount = 0};
+                Grid.Cells[GridIndex] = '+';
+                BranchLookup[GridIndex] = BranchCount++;
+            }
+        }
+    }
+
+    // Form a smaller graph consisting only of the branching points.
+    for(int BranchIndex = 0; BranchIndex < BranchCount; BranchIndex++)
+    {
+        branch* Branch = &Branches[BranchIndex];
+        for(int Dir = 0; Dir < NUM_DIRS; Dir++)
+        {
+            int16_t NeighborIndex, NeighborDist;
+            if(FindBranchingPoint(&Grid, BranchLookup, Branch->X + MoveX[Dir], Branch->Y + MoveY[Dir], 1, Dir, &NeighborIndex, &NeighborDist))
+            {
+                Branch->NeighborIndices[Branch->NeighborCount] = NeighborIndex;
+                Branch->NeighborDists[Branch->NeighborCount] = NeighborDist;
+                Branch->NeighborCount++;
+            }
+        }
+    }
+
+    table Dist;
+    InitTable(&Dist);
+    priority_queue Queue;
+    InitPriorityQueue(&Queue);
+    node Source = MakeNode(1llu << 0, 0, 0, 0);
+    TableSet(&Dist, Source, 0);
+    PriorityQueuePush(&Queue, Source, 0);
+    int64_t Result = INT64_MAX;
+    int TargetIndex = BranchCount - 1;
+    while(Queue.Count > 0)
+    {
+        node Curr = PriorityQueuePop(&Queue);
+        int64_t CurrDist;
+        TableGet(&Dist, Curr, &CurrDist);
+        if(Curr.X == TargetIndex && CurrDist < Result)
+        {
+            Result = CurrDist;
+        }
+        branch Branch = Branches[Curr.X];
+        for(int Index = 0; Index < Branch.NeighborCount; Index++)
+        {
+            int NeighborIndex = Branch.NeighborIndices[Index];
+            uint64_t NeighborMask = 1llu << NeighborIndex;
+            if(Curr.Visited & NeighborMask) continue;
+            node Neighbor = MakeNode(Curr.Visited | NeighborMask, NeighborIndex, 0, 0);
+            int64_t NeighborDist;
+            if(!TableGet(&Dist, Neighbor, &NeighborDist))
+            {
+                NeighborDist = INT64_MAX;
+            }
+            int64_t AltDist = CurrDist - Branch.NeighborDists[Index];
+            if(AltDist < NeighborDist)
+            {
+                TableSet(&Dist, Neighbor, AltDist);
+                PriorityQueuePush(&Queue, Neighbor, AltDist);
+            }
+        }
+    }
+    FreePriorityQueue(&Queue);
+    FreeTable(&Dist);
+    free(BranchLookup);
+    free(Branches);
+    FreeGrid(&Grid);
+    return -Result;
 }
