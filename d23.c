@@ -1,9 +1,6 @@
 #include "aoc.h"
 #include "parse.h"
 
-#define XXH_INLINE_ALL
-#include "xxhash.h"
-
 const char* DefaultInputPath = "d23.txt";
 
 typedef struct
