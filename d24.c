@@ -136,13 +136,6 @@ AOC_SOLVER(Part1)
     return Result;
 }
 
-typedef struct
-{
-    vec3 Position;
-    vec3 Velocity;
-    double Times[3];
-} solution;
-
 AOC_SOLVER(Part2)
 {
     hailstone_array Hailstones;
