@@ -3,11 +3,15 @@
 
 const char* DefaultInputPath = "d24.txt";
 
-typedef struct
+typedef union
 {
-    double X;
-    double Y;
-    double Z;
+    struct
+    {
+        double X;
+        double Y;
+        double Z;
+    };
+    double Axes[3];
 } vec3;
 
 typedef struct
@@ -29,6 +33,47 @@ const char* ParseVector(const char* Input, vec3* OutVector)
     return ParseNumber(Input + 2, &OutVector->Z);
 }
 
+typedef struct
+{
+    hailstone* Elements;
+    size_t Count;
+    size_t Capacity;
+} hailstone_array;
+
+static hailstone* HailstoneArrayAdd(hailstone_array* Array)
+{
+    size_t Capacity = Array->Capacity;
+    if(Array->Count == Capacity)
+    {
+        Capacity = Capacity ? 2 * Capacity : 8;
+        Array->Elements = (hailstone*)realloc(Array->Elements, sizeof(hailstone) * Capacity);
+        Array->Capacity = Capacity;
+    }
+    return &Array->Elements[Array->Count++];
+}
+
+static void InitHailstoneArray(hailstone_array* Array, const char* Input)
+{
+    Array->Elements = NULL;
+    Array->Count = 0;
+    Array->Capacity = 0;
+    while(IsDigit(*Input))
+    {
+        while(IsDigit(*Input))
+        {
+            hailstone* Hailstone = HailstoneArrayAdd(Array);
+            Input = ParseVector(Input, &Hailstone->Position);
+            Input = ParseVector(Input + 3, &Hailstone->Velocity);
+            Input = SkipPastNewline(Input);
+        }
+    }
+}
+
+static void FreeHailstoneArray(hailstone_array* Array)
+{
+    free(Array->Elements);
+}
+
 AOC_SOLVER(Part1)
 {
     double RangeMin = 200000000000000;
@@ -40,32 +85,16 @@ AOC_SOLVER(Part1)
         Input = SkipPastNewline(Input);
     }
 
-    size_t HailstoneCapacity = 8;
-    size_t HailstoneCount = 0;
-    hailstone* Hailstones = (hailstone*)malloc(sizeof(hailstone) * HailstoneCapacity);
-    while(IsDigit(*Input))
-    {
-        while(IsDigit(*Input))
-        {
-            if(HailstoneCount == HailstoneCapacity)
-            {
-                HailstoneCapacity *= 2;
-                Hailstones = (hailstone*)realloc(Hailstones, sizeof(hailstone) * HailstoneCapacity);
-            }
-            hailstone* Hailstone = &Hailstones[HailstoneCount++];
-            Input = ParseVector(Input, &Hailstone->Position);
-            Input = ParseVector(Input + 3, &Hailstone->Velocity);
-            Input = SkipPastNewline(Input);
-        }
-    }
+    hailstone_array Hailstones;
+    InitHailstoneArray(&Hailstones, Input);
 
     int64_t Result = 0;
-    for(int IndexA = 0; IndexA < HailstoneCount; IndexA++)
+    for(int IndexA = 0; IndexA < Hailstones.Count; IndexA++)
     {
-        hailstone* A = &Hailstones[IndexA];
-        for(int IndexB = IndexA + 1; IndexB < HailstoneCount; IndexB++)
+        hailstone* A = &Hailstones.Elements[IndexA];
+        for(int IndexB = IndexA + 1; IndexB < Hailstones.Count; IndexB++)
         {
-            hailstone* B = &Hailstones[IndexB];
+            hailstone* B = &Hailstones.Elements[IndexB];
 
             // The intersection point can be found by determining t_a or t_b:
             //
@@ -103,12 +132,70 @@ AOC_SOLVER(Part1)
         }
     }
 
-    free(Hailstones);
+    FreeHailstoneArray(&Hailstones);
     return Result;
 }
 
+typedef struct
+{
+    vec3 Position;
+    vec3 Velocity;
+    double Times[3];
+} solution;
+
 AOC_SOLVER(Part2)
 {
-    AOC_UNUSED(Input);
+    hailstone_array Hailstones;
+    InitHailstoneArray(&Hailstones, Input);
+
+    // Every hailstone adds 3 equations and 1 unknown (time). There are 6 base
+    // unknowns (3 position + 3 velocity). To solve the system of equations,
+    // we need at least as many equations as there are unknowns.
+    //
+    //     equations = unknowns
+    //     3n = 6 + n
+    //     n = 3
+    //
+    // Therefore, we only need to consider 3 hailstones to form a solvable
+    // system of equations.
+    //
+    // These equations are as follows, where pos_r, vel_r and t_a/b/c are the
+    // unknowns:
+    //
+    //    pos_a.x - pos_r.x + (vel_a.x - vel_r.x) * t_a = 0
+    //    pos_a.y - pos_r.y + (vel_a.y - vel_r.y) * t_a = 0
+    //    pos_a.z - pos_r.z + (vel_a.z - vel_r.z) * t_a = 0
+    //
+    //    pos_b.x - pos_r.x + (vel_b.x - vel_r.x) * t_b = 0
+    //    pos_b.y - pos_r.y + (vel_b.y - vel_r.y) * t_b = 0
+    //    pos_b.z - pos_r.z + (vel_b.z - vel_r.z) * t_b = 0
+    //
+    //    pos_c.x - pos_r.x + (vel_c.x - vel_r.x) * t_c = 0
+    //    pos_c.y - pos_r.y + (vel_c.y - vel_r.y) * t_c = 0
+    //    pos_c.z - pos_r.z + (vel_c.z - vel_r.z) * t_c = 0
+    //
+    // Because these equations are non-linear we solve them numerically using
+    // Newton's Method.
+    //
+    // Or we would, but it's an awful lot of work [1] and it's nearly Christmas.
+    // So we just output the equations so they can be fed into a solver instead,
+    // knowing that we _could_ have implemented our own one.
+    //
+    // [1] https://www.lakeheadu.ca/sites/default/files/uploads/77/docs/RemaniFinal.pdf
+    for(int HailstoneIndex = 0; HailstoneIndex < 3; HailstoneIndex++)
+    {
+        hailstone* Hailstone = &Hailstones.Elements[HailstoneIndex];
+        char TimeSymbol = "ghi"[HailstoneIndex];
+        for(int Axis = 0; Axis < 3; Axis++)
+        {
+            printf("%.0f - %c + (%.0f - %c) * %c = 0\n",
+                Hailstone->Position.Axes[Axis],
+                "abc"[Axis],
+                Hailstone->Velocity.Axes[Axis],
+                "def"[Axis],
+                TimeSymbol);
+        }
+    }
+
     return -1;
 }
