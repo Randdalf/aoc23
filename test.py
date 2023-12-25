@@ -464,3 +464,19 @@ d24_e1 = """19, 13, 30 @ -2,  1, -2
 20, 19, 15 @  1, -5, -3"""
 
 test(24, 1, "range 7 27\n" + d24_e1, "2")
+
+d25_e1 = """jqt: rhn xhk nvd
+rsh: frs pzl lsr
+xhk: hfx
+cmg: qnr nvd lhk bvb
+rhn: xhk bvb hfx
+bvb: xhk hfx
+pzl: lsr hfx nvd
+qnr: nvd
+ntq: jqt hfx bvb xhk
+nvd: lhk
+lsr: lhk
+rzs: qnr cmg lsr rsh
+frs: qnr lhk lsr"""
+
+test(25, 1, d25_e1, "54")
